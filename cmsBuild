@@ -823,6 +823,7 @@ if [ "X$CMS_INSTALL_PREFIX" = "X" ] ; then CMS_INSTALL_PREFIX=$RPM_INSTALL_PREFI
 """}
 
 COMPILER_DETECTION = { "gcc": "gcc -v 2>&1 | grep version | sed -e \'s|.*\\([0-9][.][0-9][.][0-9]\\).*|\\1|\'",
+        "clang" : "clang -v 2>&1 | grep version | perl -pe 's|.*?([0-9][.][0-9][.][0-9]).*|\\1|'",
 "icc": "echo no detection callback for icc."}
 
 
@@ -4016,13 +4017,15 @@ if __name__ == "__main__":
       opts.compilerVersion = ".".join([x for x in compactCompilerVersion])
       
       # Check validity of the system compiler.
-      if opts.compilerName == "gcc" and sys.platform == "darwin":
-        if detectCompilerVersion("gcc") == opts.compilerVersion:
-          opts.systemCompiler = True
-        else:
-          opts.systemCompiler = False
-      else:
-        opts.systemCompiler = False
+      opts.systemCompiler = False
+      if sys.platform == "darwin":
+        darwinSystemCompilers = ("gcc", "clang")
+        for compiler in darwinSystemCompilers:
+          darwinCompilerVersion = detectCompilerVersion(compiler)
+          log("Checking compiler '%s' %s =? %s" % (compiler, darwinCompilerVersion, opts.compilerVersion))
+          if darwinCompilerVersion == opts.compilerVersion:
+            log("Using system compiler")
+            opts.systemCompiler = True
       
       # Check validity of the spec file.
       if not opts.systemCompiler:
